@@ -4,6 +4,9 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Utils;
+using cs2_rockthevote.Core;
+using Serilog.Core;
 using System.Data;
 using System.Text;
 using static CounterStrikeSharp.API.Core.Listeners;
@@ -28,12 +31,13 @@ namespace cs2_rockthevote
     public class EndMapVoteManager : IPluginDependency<Plugin, Config>
     {
         const int MAX_OPTIONS_HUD_MENU = 6;
-        public EndMapVoteManager(MapLister mapLister, ChangeMapManager changeMapManager, NominationCommand nominationManager, StringLocalizer localizer, PluginState pluginState)
+        public EndMapVoteManager(MapLister mapLister, ChangeMapManager changeMapManager, NominationCommand nominationManager, StringLocalizer localizer, TimeLimitManager timeLimitManager, PluginState pluginState)
         {
             _mapLister = mapLister;
             _changeMapManager = changeMapManager;
             _nominationManager = nominationManager;
             _localizer = localizer;
+            _timeLimitManager = timeLimitManager;
             _pluginState = pluginState;
         }
 
@@ -41,6 +45,11 @@ namespace cs2_rockthevote
         private readonly ChangeMapManager _changeMapManager;
         private readonly NominationCommand _nominationManager;
         private readonly StringLocalizer _localizer;
+        private readonly TimeLimitManager _timeLimitManager;
+        private readonly string _vcRestartMessageLine1 = $" {ChatColors.Red}RESTART YOUR GAME!";
+        private readonly string _vcRestartMessageLine2 = $" {ChatColors.White}To hear voice chat after the map changes you will have to restart your game!";
+        private readonly string _vcRestartMessageLine3 = $" {ChatColors.BlueGrey}It's a bug in CS2 :(";
+        private int _vcRestartMessageCount = 0;
         private PluginState _pluginState;
         private Timer? Timer;
 
@@ -100,6 +109,27 @@ namespace cs2_rockthevote
 
         public void VoteDisplayTick()
         {
+            TimeSpan remaining = TimeSpan.FromSeconds((double)_timeLimitManager.TimeRemaining);
+
+            if (remaining.Minutes < 2)
+            {
+                if (remaining.Seconds % 15 == 0)
+                {
+                    _vcRestartMessageCount++;
+
+                    if(_vcRestartMessageCount > 1 && _vcRestartMessageCount % 64 == 0)
+                    {
+                        Server.PrintToChatAll(_vcRestartMessageLine1);
+                        Server.PrintToChatAll(_vcRestartMessageLine2);
+                        Server.PrintToChatAll(_vcRestartMessageLine3);
+                    }
+                }
+                else
+                {
+                    _vcRestartMessageCount = 0;
+                }
+            }
+
             if (timeLeft < 0)
                 return;
 
@@ -146,12 +176,21 @@ namespace cs2_rockthevote
 
             PrintCenterTextAll(_localizer.Localize("emv.hud.finished", winner.Key));
             _changeMapManager.ScheduleMapChange(winner.Key, mapEnd: mapEnd);
+
+            Server.PrintToChatAll(_vcRestartMessageLine1);
+            Server.PrintToChatAll(_vcRestartMessageLine2);
+            Server.PrintToChatAll(_vcRestartMessageLine3);
+
             if (_config!.ChangeMapImmediatly)
+            {
                 _changeMapManager.ChangeNextMap(mapEnd);
+            }
             else
             {
                 if (!mapEnd)
+                {
                     Server.PrintToChatAll(_localizer.LocalizeWithPrefix("general.changing-map-next-round", winner.Key));
+                }
             }
         }
 
