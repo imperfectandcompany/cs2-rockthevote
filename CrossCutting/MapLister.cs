@@ -13,7 +13,6 @@ namespace cs2_rockthevote
 
         public MapLister()
         {
-
         }
 
         public void Clear()
@@ -24,26 +23,40 @@ namespace cs2_rockthevote
 
         void LoadMaps()
         {
+            // Clear existing data.
             Clear();
-            string mapsFile = Path.Combine(_plugin!.ModulePath, "../maplist.txt");
-            if (!File.Exists(mapsFile))
-                throw new FileNotFoundException(mapsFile);
 
-            Maps = File.ReadAllText(mapsFile)
+            // Grab the raw filename from the ConVar.
+            string filenameRaw = _plugin!.RockTheVoteMaplistFile.Value;
+            // Forcefully remove any embedded quotes (") in case it's coming in as "maplist_surf_easy.txt" 
+            // or has extra quotes for some reason.
+            string filename = filenameRaw.Replace("\"", "").Trim();
+
+            // Determine the plugin's folder by removing the filename part of ModulePath.
+            string dllFolder = Path.GetDirectoryName(_plugin.ModulePath)
+                ?? throw new DirectoryNotFoundException($"Could not find plugin folder for {_plugin.ModulePath}");
+
+            // Combine the folder + filename into a path.
+            string filePath = Path.Combine(dllFolder, filename);
+
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"MapLister: File not found => {filePath}");
+
+            // Read & parse lines into `Map` objects.
+            Maps = File.ReadAllText(filePath)
                 .Replace("\r\n", "\n")
                 .Split("\n")
                 .Select(x => x.Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith("//"))
                 .Select(mapLine =>
                 {
-                    string[] args = mapLine.Split(":");
+                    var args = mapLine.Split(':');
                     return new Map(args[0], args.Length == 2 ? args[1] : null);
                 })
                 .ToArray();
 
             MapsLoaded = true;
-            if (EventMapsLoaded is not null)
-                EventMapsLoaded.Invoke(this, Maps!);
+            EventMapsLoaded?.Invoke(this, Maps!);
         }
 
         public void OnMapStart(string _map)
@@ -51,7 +64,6 @@ namespace cs2_rockthevote
             if (_plugin is not null)
                 LoadMaps();
         }
-
 
         public void OnLoad(Plugin plugin)
         {

@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Cvars;
 using cs2_rockthevote.Features;
 using Microsoft.Extensions.DependencyInjection;
 using static CounterStrikeSharp.API.Core.Listeners;
@@ -17,13 +18,21 @@ namespace cs2_rockthevote
             serviceCollection.AddScoped<StringLocalizer>();
         }
     }
-
+    
     public partial class Plugin : BasePlugin, IPluginConfig<Config>
     {
-        public override string ModuleName => "RockTheVote";
-        public override string ModuleVersion => "1.8.5";
-        public override string ModuleAuthor => "abnerfs";
+        public override string ModuleName => "Imperfect RTV";
+        public override string ModuleVersion => "1.8.6";
+        public override string ModuleAuthor => "abnerfs & Imperfect and Company";
         public override string ModuleDescription => "https://github.com/abnerfs/cs2-rockthevote";
+        
+        // This goes somewhere in your plugin code (e.g. next to your other Cvar definitions).
+        public FakeConVar<string> RockTheVoteMaplistFile = new(
+            "rockthevote_maplist_file",
+            "Specifies the filename of the maplist to load within the plugin folder.",
+            "maplist.txt", // default fallback
+            ConVarFlags.FCVAR_NONE
+        );
 
 
         private readonly DependencyManager<Plugin, Config> _dependencyManager;
@@ -102,10 +111,10 @@ namespace cs2_rockthevote
         {
             Config = config;
 
-            if (Config.Version < 9)
+            if (Config.Version < 10)
                 Console.WriteLine("[RockTheVote] please delete it from addons/counterstrikesharp/configs/plugins/RockTheVote and let the plugin recreate it on load");
 
-            if (Config.Version < 7)
+            if (Config.Version < 8)
                 throw new Exception("Your config file is too old, please delete it from addons/counterstrikesharp/configs/plugins/RockTheVote and let the plugin recreate it on load");
 
             _dependencyManager.OnConfigParsed(config);

@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+<TargetFramework>net8.0</TargetFramework>
     <RootNamespace>cs2_rockthevote</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.213" />
+     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.296" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,4 +21,7 @@
     </None>
   </ItemGroup> 
 
+  <ItemGroup>
+    <Reference Include="System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  </ItemGroup>
 </Project>
